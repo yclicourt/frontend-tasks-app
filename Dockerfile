@@ -16,7 +16,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Generamos el build de producción
-RUN pnpm run build:prod
+RUN pnpm run build
 
 # ---------- Stage 2: Servir con Nginx -------------
 FROM registry.local:5443/oficial-images/nginx:alpine
