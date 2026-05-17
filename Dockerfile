@@ -33,6 +33,13 @@ RUN touch /var/run/nginx.pid && \
 # Importante: verifica si tu build sale en /app/dist o /app/build
 COPY --from=build --chown=nginx:nginx /app/dist/ /usr/share/nginx/html
 
+# Copiamos el script de reemplazo
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Definimos el entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
+
 USER nginx
 
 # Importante: Nginx debe estar configurado para escuchar en el 8080 en nginx.conf
