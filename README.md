@@ -1,6 +1,3 @@
-### 🖥️ Plantilla para el Repositorio Frontend (`README.md`)
-
-```markdown
 # 🖥️ TaskApp - Frontend TaskApp
 
 Cliente web para la aplicación de tareas, desarrollado en **React**.
