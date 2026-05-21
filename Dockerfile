@@ -1,10 +1,16 @@
 # ---------- Stage 1: Build -------------
-FROM registry.local:5443/oficial-images/node:20-alpine AS build 
+FROM registry.local:5443/oficial-images/node:22-alpine AS build 
 
 WORKDIR /app
 
+# Definimos que esperamos este argumento durante el build
+ARG VITE_API_URL_PLACEHOLDER
+
+# Lo convertimos en variable de entorno para que Vite lo pueda leer
+ENV VITE_API_URL_PLACEHOLDER=$VITE_API_URL_PLACEHOLDER
+
 # Instalamos pnpm globalmente una sola vez
-RUN npm install -g pnpm@latest
+RUN npm install -g pnpm@10.33.0
 
 # Copiamos archivos de dependencias
 COPY package.json pnpm-lock.yaml* ./
