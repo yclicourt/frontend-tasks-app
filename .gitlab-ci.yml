@@ -1,0 +1,82 @@
+variables:
+  IMAGE_NAME: $REGISTRY/$REGISTRY_PROJECT/backend-ecommerce-app
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+
+stages:
+  - test-code
+  - build-image
+
+testing:
+  stage: test-code
+  image: $REGISTRY/oficial-images/node:20-alpine
+
+  
+  artifacts:
+    paths:
+      - node_modules/
+      - prisma/ 
+    expire_in: 1h
+
+  cache:
+    key: "pnpm-cache-backend"
+    paths:
+      - .pnpm-store
+      - node_modules/
+    policy: push
+
+
+  services:
+    - name: $REGISTRY/oficial-images/postgres:alpine
+      alias: ecommerce-nestdb
+
+  variables:
+    POSTGRES_DB: ecommerce_nestdb
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: mysecretpassword
+    DATABASE_URL: "postgresql://postgres:mysecretpassword@ecommerce-nestdb:5432/ecommerce_nestdb?schema=public"
+  script:
+    - apk add --no-cache postgresql-client
+    - until pg_isready -h ecommerce-nestdb -p 5432; do sleep 2; done
+    - corepack enable
+    - corepack prepare pnpm@latest --activate
+    - pnpm config set store-dir .pnpm-store
+    - pnpm install --frozen-lockfile --prefer-offline
+    - pnpm exec prisma generate
+    - pnpm exec prisma migrate deploy 
+    - pnpm prisma db seed
+    - pnpm exec tsc --noEmit
+    - pnpm run test
+
+build-image-harbor:
+  stage: build-image
+  image: quay.io/podman/stable:latest
+
+  cache:
+    key: "pnpm-cache-backend"
+    paths:
+      - .pnpm-store
+      - node_modules/
+    policy: pull
+
+  variables:
+    # IMPORTANTE: Podman necesita este storage driver para correr dentro de k3s
+    STORAGE_DRIVER: vfs
+
+  script:
+    # 1. Login en Harbor (Podman usará los certificados montados por tu Runner)
+    - echo "$REGISTRY_PASS" | podman login $REGISTRY -u "$REGISTRY_USER" --password-stdin
+
+    - podman pull $IMAGE_NAME:latest || true
+    # 2. Build de la imagen
+    # Usamos --tls-verify=true porque ya montaste los certificados en el Runner
+    - podman build 
+        --tls-verify=true 
+        --cache-from $IMAGE_NAME
+        -t $IMAGE_NAME:$IMAGE_TAG 
+        -t $IMAGE_NAME:latest 
+        -f Dockerfile .
+
+    # 3. Push a Harbor
+    - podman tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest
+    - podman push $IMAGE_NAME:latest
+ 
