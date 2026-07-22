@@ -1,8 +1,5 @@
 #!/bin/sh
 
-# Buscamos en todos los archivos .js de la carpeta donde Nginx sirve la app
-# y reemplazamos el placeholder por el valor de la variable de entorno
-find /usr/share/nginx/html -name "*.js" -exec sed -i "s|VITE_API_URL_PLACEHOLDER|$VITE_BASE_URL|g" {} +
+sed -i "s|API_URL: null|API_URL: \"$VITE_API_URL_PLACEHOLDER\"|g" /usr/share/nginx/html/config.js
 
-# Ejecutamos el comando original de Nginx
 exec "$@"

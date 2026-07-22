@@ -1,7 +1,10 @@
 import axios from "axios";
 
+const API_URL =
+  window.APP_CONFIG?.API_URL || import.meta.env.VITE_API_URL_PLACEHOLDER;
+
 const tasksApi = axios.create({
-  baseURL: import.meta.env.VITE_API_URL_PLACEHOLDER,
+  baseURL: API_URL,
 });
 
 export const getAllTasks = () => tasksApi.get("/");
